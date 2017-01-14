@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Mail;
 using System.Text;
-using System.Threading.Tasks;
 using EmailSearcher.Imap;
 using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
@@ -46,7 +44,19 @@ namespace EmailSearcher.Lucene
             this.writer.Optimize();
         }
 
-        private Document CreateDocumentFromMailMessage(Tuple<uint, MailMessage> messageTuple )
+        protected IndexWriter GetIndexWriter()
+        {
+            if (System.IO.Directory.Exists(LuceneConstants.LuceneStoreDirectory))
+            {
+                return this.OpenExistingWriter();
+            }
+            else
+            {
+                return this.CreateWriter();
+            }
+        }
+
+        private Document CreateDocumentFromMailMessage(Tuple<uint, MailMessage> messageTuple)
         {
             MailMessage message = messageTuple.Item2;
             Document doc = new Document();
@@ -65,7 +75,7 @@ namespace EmailSearcher.Lucene
             doc.Add(new NumericField(LuceneConstants.UIDField, 1, Field.Store.YES, true).SetLongValue(messageTuple.Item1));
             doc.Add(new NumericField(LuceneConstants.AttachmentCountField, 1, Field.Store.YES, true).SetIntValue(message?.Attachments.Count ?? 0));
             doc.Add(new NumericField(LuceneConstants.HasAttachmentsField, 1, Field.Store.YES, true).SetIntValue(message?.Attachments.Count ?? 0));
-            doc.Add(new NumericField(LuceneConstants.IsPriorityField, 1, Field.Store.YES, true).SetIntValue((int) message.Priority));           
+            doc.Add(new NumericField(LuceneConstants.IsPriorityField, 1, Field.Store.YES, true).SetIntValue((int)message.Priority));           
              
             return doc;
         }
@@ -74,9 +84,9 @@ namespace EmailSearcher.Lucene
         {
             StringBuilder stringBuilder = new StringBuilder();
             bool first = true;
-            foreach(T t in items)
+            foreach (T t in items)
             {
-                if(!first)
+                if (!first)
                 {
                     stringBuilder.Append(",");
                 }
@@ -87,20 +97,9 @@ namespace EmailSearcher.Lucene
 
                 stringBuilder.Append(t.ToString());
             }
-            return stringBuilder.ToString();
-        }
 
-        protected virtual IndexWriter GetIndexWriter()
-        {
-            if(System.IO.Directory.Exists(LuceneConstants.LuceneStoreDirectory))
-            {
-                return this.OpenExistingWriter();
-            }
-            else
-            {
-                return this.CreateWriter();
-            }
-        }
+            return stringBuilder.ToString();
+        }        
 
         private IndexWriter OpenExistingWriter()
         {
@@ -122,7 +121,7 @@ namespace EmailSearcher.Lucene
             GC.SuppressFinalize(this);
         }
 
-        protected void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (!this.disposed)
             {

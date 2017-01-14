@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace EmailSearcher.Lucene
+﻿namespace EmailSearcher.Lucene
 {
     public static class LuceneConstants
     {
@@ -23,6 +17,5 @@ namespace EmailSearcher.Lucene
         public const string SubjectField = "Subject";
         public const string UIDField = "UID";
         #endregion
-
     }
 }

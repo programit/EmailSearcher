@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Mail;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EmailSearcher.Imap;
 using S22.Imap;
 
 namespace EmailSearcher.Imap
@@ -22,7 +19,7 @@ namespace EmailSearcher.Imap
 
         public IMapHandler(IMapUidStore imapUidStore)
         {
-            if(imapUidStore == null)
+            if (imapUidStore == null)
             {
                 throw new ArgumentNullException(nameof(imapUidStore));
             }
@@ -35,25 +32,25 @@ namespace EmailSearcher.Imap
         public IEnumerable<Tuple<uint, MailMessage>> GetNewMessages(CancellationToken token)
         {
             ICollection<uint> newUids = this.GetNewMessageIds();
-            foreach(uint uid in newUids)
+            foreach (uint uid in newUids)
             {
-                if(token.IsCancellationRequested)
+                if (token.IsCancellationRequested)
                 {
                     throw new TaskCanceledException();
                 }
 
-                MailMessage message = imapClient.GetMessage(uid);
+                MailMessage message = this.imapClient.GetMessage(uid);
                 yield return new Tuple<uint, MailMessage>(uid, message);
             }
         } 
 
         private ICollection<uint> GetNewMessageIds()
         {
-            IEnumerable<uint> uids = imapClient.Search(SearchCondition.All());
+            IEnumerable<uint> uids = this.imapClient.Search(SearchCondition.All());
             List<uint> newIds = new List<uint>();
-            foreach(uint uid in uids)
+            foreach (uint uid in uids)
             {
-                if(!imapUidStore.IsUidStored(uid))
+                if (!this.imapUidStore.IsUidStored(uid))
                 {
                     newIds.Add(uid);
                 }
@@ -73,7 +70,7 @@ namespace EmailSearcher.Imap
             GC.SuppressFinalize(this);
         }
 
-        protected void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (!this.disposed)
             {

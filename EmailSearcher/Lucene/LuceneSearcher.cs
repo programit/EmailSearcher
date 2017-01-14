@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Grammer;
 using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
@@ -10,14 +8,18 @@ using Lucene.Net.QueryParsers;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using LuceneVersion = Lucene.Net.Util.Version;
+
 namespace EmailSearcher.Lucene
 {
-    public class LuceneSearcher
+    public class LuceneSearcher : IDisposable
     {
         private const int MaxSearchResults = 100;
 
+        private static readonly string[] EmptyStringList = new string[0];
+        private static readonly List<DocObject> EmptyResults = new List<DocObject>(0);
+        private static readonly char[] SplitCharacters = new char[] { ',' };
+
         private readonly Analyzer analyzer;
-        private readonly TextParser textParser;
         private readonly IndexSearcher searcher;
 
         private readonly QueryParser bodyParser;
@@ -25,16 +27,13 @@ namespace EmailSearcher.Lucene
         private readonly QueryParser ccParser;
         private readonly QueryParser bccParser;
         private readonly QueryParser fromParser;
-        private readonly QueryParser subjectParser;
-
-        private static readonly string[] EmptyStringList = new string[0];
-        private static readonly List<DocObject> EmptyResults = new List<DocObject>(0);
-        private static readonly char[] SplitCharacters = new char[] { ',' };
+        private readonly QueryParser subjectParser;   
+        
+        private bool disposed = false;
 
         public LuceneSearcher()
         {
             this.analyzer = new WhitespaceAnalyzer();
-            this.textParser = new TextParser();
             this.searcher = new IndexSearcher(FSDirectory.Open(LuceneConstants.LuceneStoreDirectory));
 
             this.bodyParser = new QueryParser(LuceneVersion.LUCENE_30, LuceneConstants.BodyField, this.analyzer);
@@ -48,9 +47,9 @@ namespace EmailSearcher.Lucene
         public List<DocObject> Search(ICollection<Tuple<FieldType, string>> expressions)
         {            
             List<HashSet<int>> docList = new List<HashSet<int>>();
-            foreach(Tuple<FieldType, string> match in expressions)
+            foreach (Tuple<FieldType, string> match in expressions)
             {
-                switch(match.Item1)
+                switch (match.Item1)
                 {
                     case FieldType.To:
                         docList.Add(new HashSet<int>(this.QueryString(this.toParser, match.Item2).Select(v => v.Doc)));
@@ -64,7 +63,7 @@ namespace EmailSearcher.Lucene
                 }
             }
 
-            if(docList.Count == 0)
+            if (docList.Count == 0)
             {
                 return LuceneSearcher.EmptyResults;
             }
@@ -77,10 +76,10 @@ namespace EmailSearcher.Lucene
         private List<DocObject> ConvertDocIdsToObjects(List<int> docs)
         {
             List<DocObject> objects = new List<DocObject>(docs.Count);
-            foreach(int docId in docs)
+            foreach (int docId in docs)
             {
                 Document doc = this.searcher.Doc(docId);
-                if(doc == null)
+                if (doc == null)
                 {
                     continue;
                 }
@@ -155,7 +154,6 @@ namespace EmailSearcher.Lucene
         
         private void QueryNumericRange(Tuple<FieldType, string> match)
         {
-
         }
 
         private ScoreDoc[] QueryString(QueryParser parser, string queryText)
@@ -163,6 +161,26 @@ namespace EmailSearcher.Lucene
             Query query = parser.Parse(queryText);
             TopDocs hits = this.searcher.Search(query, LuceneSearcher.MaxSearchResults);
             return hits.ScoreDocs;
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this.disposed)
+            {
+                if (disposing)
+                {
+                    this.analyzer.Dispose();
+                    this.searcher.Dispose();
+                }
+
+                this.disposed = true;
+            }
         }
     }
 }

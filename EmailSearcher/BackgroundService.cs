@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Mail;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EmailSearcher.Imap;
@@ -14,38 +12,37 @@ namespace EmailSearcher
     public class BackgroundService : IDisposable
     {
         private static readonly TimeSpan WaitBetweenNewMailChecks = TimeSpan.FromMinutes(5);
-        private static readonly IMapUidStore imapUidStore = new IMapUidStore();
+        private static readonly IMapUidStore ImapUidStore = new IMapUidStore();
 
-        private readonly IMapHandler imapHandler;
         private readonly LuceneWriter lucentHandler;
 
         private bool disposed = false;
 
-
         public BackgroundService()
         {
-            this.imapHandler = new IMapHandler(BackgroundService.imapUidStore);
-            this.lucentHandler = new LuceneWriter(BackgroundService.imapUidStore);
+            this.lucentHandler = new LuceneWriter(BackgroundService.ImapUidStore);
         }
 
         public async Task Start(CancellationToken token)
         {
             do
             {
-                try
+                using (IMapHandler imapHandler = new IMapHandler(BackgroundService.ImapUidStore))
                 {
-                    IEnumerable<Tuple<uint, MailMessage>> newMessages = this.imapHandler.GetNewMessages(token);
-                    this.ProcessMessages(newMessages, token);
-                }
-                catch (TaskCanceledException)
-                {
-                    Trace.TraceInformation("Task cancelled");
-                    return;
-                }
-                catch (Exception e)
-                {
-                    //TODO: On forced connection closed we should reopen. Or only open when talking
-                    Trace.TraceError($"Error: {e}");                    
+                    try
+                    {
+                        IEnumerable<Tuple<uint, MailMessage>> newMessages = imapHandler.GetNewMessages(token);
+                        this.ProcessMessages(newMessages, token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        Trace.TraceInformation("Task cancelled");
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.TraceError($"Error: {e}");
+                    }
                 }
 
                 await Task.Delay(BackgroundService.WaitBetweenNewMailChecks, token);
@@ -54,9 +51,9 @@ namespace EmailSearcher
 
         private void ProcessMessages(IEnumerable<Tuple<uint, MailMessage>> messages, CancellationToken token)
         {
-            foreach(Tuple<uint, MailMessage> message in messages)
+            foreach (Tuple<uint, MailMessage> message in messages)
             {
-                if(token.IsCancellationRequested)
+                if (token.IsCancellationRequested)
                 {
                     throw new TaskCanceledException();
                 }
@@ -73,14 +70,13 @@ namespace EmailSearcher
             GC.SuppressFinalize(this);
         }
 
-        protected void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (!this.disposed)
             {
                 if (disposing)
                 {
                     this.lucentHandler.Dispose();
-                    this.imapHandler.Dispose();
                 }
 
                 this.disposed = true;

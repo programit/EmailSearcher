@@ -1,0 +1,79 @@
+﻿<Window x:Class="EmailSearcher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:EmailSearcher"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="650" Width="1525"
+        Closing="Window_Closing">
+    <Grid Name="MainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25" />
+            <RowDefinition Height="1*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="500" />
+            <ColumnDefinition Width="1*" />
+        </Grid.ColumnDefinitions>
+        <Grid.DataContext>
+            <local:ViewModel />
+        </Grid.DataContext>
+        <TextBox Name="SearchBox"
+                 KeyUp="SearchBox_KeyUp"
+                 Grid.Row="0"
+                 Grid.Column="0"></TextBox>
+        <ListView Grid.Row="1"
+                  Grid.Column="0"
+                  ItemsSource="{Binding Results}"
+                  Name="listView">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Border BorderBrush="Gray" BorderThickness="0,0,0,1">
+                        <Grid MouseUp="Grid_MouseUp">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="1*" 
+                                               MaxHeight="15"/>
+                                <RowDefinition Height="1*"
+                                               MaxHeight="15" />
+                                <RowDefinition Height="1*"
+                                               MaxHeight="15" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="75" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Name="Sender"
+                                       Grid.Row="0"
+                                       Grid.Column="0" 
+                                       Text="{Binding From}"
+                                       TextWrapping="NoWrap"
+                                       FontWeight="Bold"/>
+                            <TextBlock Name="Subject"
+                                       Grid.Row="1"
+                                       Grid.Column="0"
+                                       Text="{Binding Subject}"
+                                       TextWrapping="NoWrap"
+                                       Foreground="#2585c0" />
+                            <TextBlock Name="Time"
+                                       Grid.Row="1"
+                                       Grid.Column="1"
+                                       Text="{Binding FormattedDate}"
+                                       TextWrapping="NoWrap"
+                                       Foreground="#2585c0"/>
+                            <TextBlock Name="Body"
+                                       Grid.Row="2"
+                                       Grid.Column="0"
+                                       Grid.ColumnSpan="2"
+                                       Text="{Binding FormattedBody}" 
+                                       TextWrapping="NoWrap"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <WebBrowser Grid.Column="1" Grid.RowSpan="2" Name="browser">
+            
+        </WebBrowser>
+    </Grid>
+</Window>
